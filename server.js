@@ -31,6 +31,7 @@ var userApp = http.createServer(function (req, res) {
             }
             res.end(JSON.stringify(oneUser));
         }
+        
     }
     if (req.method === 'POST') {
         if (req.url === '/users') {
