@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 
 const PORT: number = 2000;
 
+
 const userApp = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     const userId: string | undefined = req.url?.split('/')[2];
