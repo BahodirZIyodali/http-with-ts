@@ -131,53 +131,39 @@ let app = http.createServer((req: http.IncomingMessage, res: http.ServerResponse
     }
   }
 
+if (req.method === "DELETE") {
+  if (req.url === `/courses/${course_id}`) {
+    let courses = read_file("courses.json");
+    let updated_courses = courses.filter((course: Course) => course.id !== course_id);
 
-    if (req.method === 'DELETE') {
-        if (req.url === `/users/${userId}`) {
-            let users: any[] = read_file('users.json');
+    write_file("courses.json", updated_courses);
+    res.end(JSON.stringify("OK"));
+  }
+}
 
-            const getOne: any = users.find((u: any) => u.id === userId);
+if (req.method === "PUT") {
+  if (req.url === `/courses/${course_id}`) {
+    req.on("data", (chunk) => {
+      let courses = read_file("courses.json");
+      let updated_course = JSON.parse(chunk.toString());
 
-            if (!getOne) {
-                return res.end('users not found!');
-            }
-
-            users.forEach((u: any, idx: number) => {
-                if (u.id === userId) {
-                    users.splice(idx, 1);
-                }
-            });
-
-            write_file('users.json', users);
-            res.end('Deleted users!');
+      courses = courses.map((course: Course) => {
+        if (course.id === course_id) {
+          return {
+            ...course,
+            ...updated_course,
+            id: course_id,
+          };
         }
-    }
-    if (req.method === 'PUT') {
-        if (req.url === `/users/${userId}`) {
-            req.on('data', (chunk: Uint8Array) => {
-                const updateUser: any = JSON.parse(chunk.toString());
+        return course;
+      });
 
-                let users: any[] = read_file('users.json');
+      write_file("courses.json", courses);
+      res.end(JSON.stringify("OK"));
+    });
+  }
+}
 
-                const getOne: any = users.find((f: any) => f.id === userId);
-
-                if (!getOne) {
-                    return res.end('users not found!');
-                }
-
-                users.forEach((user: any) => {
-                    if (user.id === userId) {
-                        user.name = updateUser.name;
-                        user.username = updateUser.username;
-                        user.email = updateUser.email;
-                    }
-                });
-
-                write_file('users.json', users);
-
-                res.end('Updated users!');
-            });
-        }
     }
 });
 
