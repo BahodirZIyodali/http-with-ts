@@ -1,46 +1,136 @@
-import * as http from 'http';
-import { read_file, write_file } from './fs_api';
-import { v4 as uuid } from 'uuid';
+import http from "http";
+import uuid from "uuid";
+import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
+import { read_file, write_file } from "./fs_api/fs_api";
 
-const PORT: number = 2000;
+dotenv.config();
 
+interface Course {
+  id: string;
+  title: string;
+  price: number;
+  author: string;
+  userId: string;
+}
 
-const userApp = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    const userId: string | undefined = req.url?.split('/')[2];
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+}
 
-    if (req.method === 'GET') {
-        if (req.url === '/users') {
-            const users: any[] = read_file('users.json');
-            res.end(JSON.stringify(users));
-        }
+let app = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
+  res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
 
-        if (req.url === `/users/${userId}`) {
-            const oneUser: any = read_file('users.json').find((u: any) => u.id === userId);
+  const course_id = req.url!.split("/")[2];
+  if (req.method === "GET") {
+    if (req.url === "/list") {
+      let loggedUserId = req.headers.headers;
 
-            if (!oneUser) {
-                return res.end('User not found!');
-            }
+      console.log(loggedUserId);
 
-            res.end(JSON.stringify(oneUser));
-        }
+      let courses = read_file("courses.json").filter((course: Course) => course.userId === loggedUserId);
+
+      res.end(JSON.stringify(courses));
     }
 
-    if (req.method === 'POST') {
-        if (req.url === '/users') {
-            req.on('data', (chunk: Uint8Array) => {
-                const users: any[] = read_file('users.json');
-                const newUser: any = JSON.parse(chunk.toString());
+    if (req.url === `/list/${course_id}`) {
+      let oneCourse = read_file("courses.json").find((course: Course) => course.id === course_id);
 
-                users.push({
-                    id: uuid(),
-                    ...newUser,
-                });
-                write_file('users.json', users);
-                res.end(JSON.stringify('OK'));
-            });
-        }
+      if (!oneCourse) return res.end("Course not found!");
+
+      res.end(JSON.stringify(oneCourse));
     }
+  }
+
+  if (req.method === "POST") {
+    if (req.url === "/create") {
+      req.on("data", (chunk) => {
+        let courses = read_file("courses.json");
+        let new_course = JSON.parse(chunk.toString());
+
+        courses.push({
+          id: uuid.v4(),
+          ...new_course,
+        });
+
+        write_file("courses.json", courses);
+
+        res.end(JSON.stringify("OK"));
+      });
+    }
+
+    if (req.url === "/register") {
+      req.on("data", async (chunk) => {
+        let { username, email, password } = JSON.parse(chunk.toString());
+
+        let users = read_file("users.json");
+        let foundedUser = users.find((u: User) => u.email === email);
+
+        if (foundedUser)
+          return res.end(
+            JSON.stringify({
+              msg: "Email already exists!!!",
+            })
+          );
+
+        let hashedPsw = await bcrypt.hash(password, 12);
+
+        users.push({
+          id: uuid.v4(),
+          username,
+          email,
+          password: hashedPsw,
+        });
+
+        write_file("users.json", users);
+        res.end(
+          JSON.stringify({
+            msg: "Registrated!",
+          })
+        );
+      });
+    }
+
+    if (req.url === "/login") {
+      req.on("data", async (chunk) => {
+        const { suppername, password } = JSON.parse(chunk.toString());
+
+        let users = read_file("users.json");
+
+        let foundedUser = users.find(
+          (user: User) => user.username === suppername || user.email === suppername
+        );
+
+        if (!foundedUser)
+          return res.end(
+            JSON.stringify({
+              msg: "User not found!",
+            })
+          );
+
+        let isLogged = await bcrypt.compare(password, foundedUser.password);
+
+        if (!isLogged)
+          return res.end(
+            JSON.stringify({
+              msg: "Password xato!",
+            })
+          );
+
+        delete foundedUser.password;
+        res.end(
+          JSON.stringify({
+            msg: "Logged",
+            data: foundedUser,
+          })
+        );
+      });
+    }
+  }
+
 
     if (req.method === 'DELETE') {
         if (req.url === `/users/${userId}`) {
