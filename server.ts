@@ -1,10 +1,17 @@
-import http from "http";
-import uuid from "uuid";
-import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
-import { read_file, write_file } from "./fs_api/fs_api";
+import * as http from "http";
+import * as uuid from "uuid";
+import * as bcrypt from "bcryptjs";
+import * as fs from 'fs';
 
-dotenv.config();
+const read_file = (file_name: string): any => {
+  return JSON.parse(fs.readFileSync(`./module/${file_name}`, 'utf-8'));
+}
+
+const write_file = (file_name: string, data: any): void => {
+  fs.writeFileSync(`./module/${file_name}`, JSON.stringify(data, null, 4));
+}
+
+
 
 interface Course {
   id: string;
@@ -164,9 +171,8 @@ if (req.method === "PUT") {
   }
 }
 
-    }
 });
 
-userApp.listen(PORT, () => {
-    console.log(`server running ${PORT}`);
+app.listen(2000, () => {
+    console.log(`server running 2000`);
 });
