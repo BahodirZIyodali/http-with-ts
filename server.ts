@@ -3,6 +3,7 @@ import * as uuid from "uuid";
 import * as bcrypt from "bcryptjs";
 import * as fs from 'fs';
 
+
 const read_file = (file_name: string): any => {
   return JSON.parse(fs.readFileSync(`./module/${file_name}`, 'utf-8'));
 }
